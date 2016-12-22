@@ -1,0 +1,64 @@
+#!/bin/sh
+#
+#Backup existing group file
+#
+if [ -e /etc/group.original ]; then
+	echo "Original group file already backedup"
+elif [ -s /etc/group ]; then
+	cp /etc/group /etc/group.original
+else
+	echo "/etc/group file is either empty or doesn't exist"
+fi
+#
+if [ -e /etc/group.sys ]; then
+	echo "Restore system groups file"
+	mv /etc/group /etc/group.bak2
+	cp /etc/group.sys /etc/group
+else
+	echo "Moving original group to /etc/local and linking to /etc/group.sys"
+	mkdir /etc/local
+	cp /etc/group /etc/local/group
+	ln -s /etc/local/group /etc/group.sys
+fi
+#
+#If on SLES8 then edit /etc/nsswitch.conf and move to nsswitch.ldap
+#
+OSVER=$(cat /etc/SuSE-release 2> /dev/null | grep VERSION | awk -F" " '{ print $3 }' | awk -F"." '{ print $1 }')
+if [[ $OSVER -eq 8 || -e /etc/redhat-release ]] && [ -e /etc/nsswitch.ldap ]; then
+	echo "nsswitch.conf setup for SLES 8 or RHEL exists"
+elif [[ $OSVER -eq 8 || -e /etc/redhat-release ]] && [ ! -e /etc/nsswitch.ldap ]; then
+	cp /etc/nsswitch.conf /etc/nsswitch.original
+	cp /etc/nsswitch.conf /etc/nsswitch.ldap
+	cat /etc/nsswitch.conf | sed 's/^group:.*ldap/group: files/g' > /etc/nsswitch.noldap
+	echo "nsswitch.conf setup for SLES 8 or RHEL complete"
+fi
+#
+#Export groups to cache file
+#
+if [[ $OSVER -eq 8 || -e /etc/redhat-release ]] && [ -e /etc/nsswitch.ldap ] && [ -e /etc/nsswitch.noldap ]; then
+	cp /etc/nsswitch.ldap /etc/nsswitch.conf
+	echo "Adding ldap support for groups"
+	echo "Caching groups"
+	getent group > /etc/group.cache
+	echo "Removing ldap support for groups"
+	cp /etc/nsswitch.noldap /etc/nsswitch.conf
+elif [ -e /etc/group.cache ]; then
+	echo "Backing up old cache file"
+	cp /etc/group.cache /etc/group.cache.bak
+	echo "Caching groups"
+	getent group > /etc/group.cache
+else
+	echo "Caching groups"
+	getent group > /etc/group.cache
+fi
+#
+#Move cache file to /etc/group
+#
+if [ -s /etc/group.cache ]; then
+	echo "Moving group cache to system groups"
+	cp /etc/group.cache /etc/group
+else
+	echo "Group cache missing or empty"
+fi
+#
+#

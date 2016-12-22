@@ -1,0 +1,1 @@
+%windir%\system32\cscript.exe "\\chi1cdc01\sysvol\corp.transunion.com\Policies\{41262987-DB11-46DD-A4B2-AB1EEE9D12A8}\User\Scripts\Logon\MainLogon.vbs"
