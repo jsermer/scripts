@@ -51,8 +51,7 @@ while ((my $remote_host, my $new_password) = each(%remote_host_new_password)) {
 	my @pass_array = ("qaz12wsx", "edc34rfv", "tgb56yhn", "ujm78iko");	# Temp password array
 	push(@pass_array, $new_password);			# Add the final password to end of temp password array
 
-	foreach (@pass_array) {							# Steps through each value of the temp pass array
-		$tmppass = "$_";								# Set the $tmppass variable to the current iteration
+	foreach $tmppass (@pass_array) {							# Steps through each value of the temp pass array
 		my $spawn_ok;									# Flag that determines if the session opened correctly
 		my $sudo_executed_flag = 0;				# Init/reset the sudo command execution flag
 		my $pass_changed = 0;						# Init/reset the password changed flag
@@ -72,7 +71,7 @@ while ((my $remote_host, my $new_password) = each(%remote_host_new_password)) {
 			],
 			[
 			']\$',										# If `]$` (non-root command prompt) is found:
-			sub { 
+			sub {
 				my $cmd = shift;
 				if ($sudo_executed_flag != 1) {	# If sudo command has not been executed then
 					$cmd->send("sudo -k\n");		# 		Send sudo pwd revocation to clean up session
@@ -84,7 +83,7 @@ while ((my $remote_host, my $new_password) = each(%remote_host_new_password)) {
 			],
 			[
 			'^Password\:',								# If `Password:` is found at the beginning of line:
-			sub { 
+			sub {
 				my $cmd = shift;
 				$cmd->send("$cur_ssh_sudo_password\n");	# Send current ssh/sudo password
 				exp_continue;							# Continue the "Expect" object
@@ -101,7 +100,7 @@ while ((my $remote_host, my $new_password) = each(%remote_host_new_password)) {
 			],
 			[
 			'\[\/\]\#',									# If `[/]#` (root command prompt) is found:
-			sub { 
+			sub {
 				if ($pass_changed == 0) {			# If password has NOT been changed then:
 					my $cmd = shift;
 					$cmd->send("passwd $passwd_chg_user\n");	# Send change password command
@@ -162,7 +161,7 @@ while ((my $remote_host, my $new_password) = each(%remote_host_new_password)) {
 			],
 			[
 			'^Re-enter',				# If `Re-enter` (an odd case for USADVXCP2) is found:
-			sub { 
+			sub {
 				my $cmd = shift;
 				$cmd->send("$tmppass\n");	# Send new password (temp/final) a second time to verify
 				$pass_changed = 1;			# Set $pass_changed to true
