@@ -1,0 +1,113 @@
+#!/bin/bash
+
+echo -e "\nPausing VMs\n"
+#/usr/bin/systemctl stop vboxvmservice@win8vm
+#/usr/bin/systemctl stop vboxvmservice@fedora
+
+echo -e "\nActivating external drive volume group\n"
+/sbin/vgchange -ay externalvg
+
+sleep 10
+
+echo -e "\nMounting all external filesystems\n"
+/bin/mount -o noatime,user_xattr /dev/externalvg/octane_boot /external/octane/boot
+/bin/mount -o noatime,user_xattr /dev/externalvg/octane_root /external/octane/root
+/bin/mount -o noatime,user_xattr /dev/externalvg/ignyter_boot /external/ignyter/boot
+/bin/mount -o noatime,user_xattr /dev/externalvg/ignyter_root /external/ignyter/root
+/bin/mount -o noatime,user_xattr /dev/externalvg/ignyter_data /external/ignyter/data
+/bin/mount -o noatime,user_xattr /dev/externalvg/ignyter_virtual_machines /external/ignyter/virtual_machines
+/bin/mount -o noatime,user_xattr /dev/externalvg/arch_boot /external/arch/boot
+/bin/mount -o noatime,user_xattr /dev/externalvg/arch_root /external/arch/root
+/bin/mount -o noatime,user_xattr /dev/externalvg/bub_usbstick /external/bub/usbstick
+
+echo -e "\nBacking up.....\n"
+if [ -d /external/octane/boot/lost+found ]; then
+	echo -e "\n**********************     octane:/boot\n"
+	/usr/bin/rsync --delete-before --sparse -avx octane:/boot/. /external/octane/boot/.
+else
+	echo -e "\noctane:/boot not mounted\n"
+fi
+
+if [ -d /external/octane/root/lost+found ]; then
+	echo -e "\n**********************     octane:/\n"
+	/usr/bin/rsync --delete-before --sparse -avx octane:/. /external/octane/root/.
+else
+	echo -e "\noctane:/ not mounted\n"
+fi
+
+if [ -d /external/ignyter/boot/lost+found ]; then
+	echo -e "\n**********************     old_ignyter:/boot\n"
+	/usr/bin/rsync --delete-before --sparse -avx /mnt/ignyter/boot/. /external/ignyter/boot/.
+else
+	echo -e "\nignyter:/boot not mounted\n"
+fi
+
+if [ -d /external/ignyter/root/lost+found ]; then
+	echo -e "\n**********************     old_ignyter:/\n"
+	/usr/bin/rsync --delete-before --sparse -avx --exclude 'export/' /mnt/ignyter/. /external/ignyter/root/.
+else
+	echo -e "\nignyter:/ not mounted\n"
+fi
+
+if [ -d /external/ignyter/virtual_machines/lost+found ]; then
+	echo -e "\n**********************     ignyter:/virtual_machines\n"
+	/usr/bin/rsync --delete-before -av --inplace /virtual_machines/. /external/ignyter/virtual_machines/.
+else
+	echo -e "\nignyter:/virtual_machines not mounted\n"
+fi
+
+if [ -d /external/ignyter/data/lost+found ]; then
+	echo -e "\n**********************     ignyter:/data\n"
+	/usr/bin/rsync --delete-before --sparse -avx /data/. /external/ignyter/data/.
+else
+	echo -e "\nignyter:/data not mounted\n"
+fi
+
+if [ -d /external/arch/boot/grub ]; then
+	echo -e "\n**********************     ignyter:/boot\n"
+	/usr/bin/rsync --delete-before --sparse -avx /boot/. /external/arch/boot/.
+else
+	echo -e "\narch:/boot not mounted\n"
+fi
+
+if [ -d /external/arch/root/lost+found ]; then
+	echo -e "\n**********************     ignyter:/\n"
+	/usr/bin/rsync --delete-before --sparse -avx --exclude 'export/' /. /external/arch/root/.
+else
+	echo -e "\narch:/ not mounted\n"
+fi
+
+echo -e "\nSyncing filesystems...\n"
+
+if [ -d /external/bub/usbstick/lost+found ]; then
+	echo -e "\n**********************     bub:/tmp/mnt/sda1\n"
+	/usr/bin/rsync --delete-before --sparse -avx /mnt/bub/. /external/bub/usbstick/.
+else
+	echo -e "\nignyter:/mnt/bub not mounted\n"
+fi
+
+echo -e "\nSyncing filesystems...\n"
+/usr/bin/sync
+/usr/bin/sync
+/usr/bin/sync
+
+echo -e "\nUn-mounting all external filesystems\n"
+/bin/umount /external/octane/boot
+/bin/umount /external/octane/root
+/bin/umount /external/ignyter/boot
+/bin/umount /external/ignyter/root
+/bin/umount /external/ignyter/data
+/bin/umount /external/ignyter/virtual_machines
+/bin/umount /external/arch/boot
+/bin/umount /external/arch/root
+/bin/umount /external/bub/usbstick
+
+echo -e "\nDe-activating external drive volume group\n"
+/sbin/vgchange -an externalvg
+
+echo -e "\nResuming VMs\n"
+#/usr/bin/systemctl start vboxvmservice@win8vm
+#/usr/bin/systemctl start vboxvmservice@fedora
+
+echo -e "\nPutting external disk to sleep\n"
+/usr/bin/hdparm -y /dev/disk/by-id/ata-Hitachi_HDS722020ALA330_JK1100YAH1KDYT
