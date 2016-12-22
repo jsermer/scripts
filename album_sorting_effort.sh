@@ -1,11 +1,11 @@
 #!/bin/bash
-for i in $(find . -mindepth 3 -maxdepth 3 -type f)
+while IFS= read -r -d '' file
 do
-   album=$(mp3info -x -p "%l\n" $i |sed -e "s/'//g" -e 's/ /_/g' -e 's/\//-/g' -e 's/\\/-/g' -e 's/\&/n/g'|tr '[:upper:]' '[:lower:]')
+   album=$(mp3info -x -p "%l\n" $file |sed -e "s/'//g" -e 's/ /_/g' -e 's/\//-/g' -e 's/\\/-/g' -e 's/\&/n/g'|tr '[:upper:]' '[:lower:]')
    if [[ ! -z $album ]]; then
-      if [[ ! -d $(dirname $i)/$album ]]; then
-         echo mkdir $(dirname $i)/$album
+      if [[ ! -d $(dirname $file)/$album ]]; then
+         echo mkdir "$(dirname $file)"/$album
       fi
-   echo mv $i $(dirname $i)/$album/.
+   echo mv $file "$(dirname $file)"/$album/.
    fi
-done
+done < <(find . -mindepth 3 -maxdepth 3 -type f -print0)
