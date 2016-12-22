@@ -2,8 +2,8 @@
 removed=0
 diff=0
 for i in $(find . -type f); do
-	j=$(echo $i |tr [:upper:] [:lower:])
-	if [[ $i != $j ]]; then
+	j=$(echo $i |tr '[:upper:]' '[:lower:]')
+	if [[ $i != "$j" ]]; then
 		if [[ -f $j ]]; then
 			if ! diff $i $j > /dev/null 2>&1; then
 				diff=$(expr $diff + 1)
