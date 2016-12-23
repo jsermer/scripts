@@ -28,7 +28,7 @@ fi
 proto=`echo "$out" | grep '^ *Protocol *:' | awk '{ print $3 }'`
 cipher=`echo "$out" | grep '^ *Cipher *:' | awk '{ print $3 }'`
 
-if [ "$cipher" = '0000'  -o  "$cipher" = '(NONE)' ]; then
+if [ "$cipher" = '0000' ] || [ "$cipher" = '(NONE)' ]; then
 	echo 'Not vulnerable.  Failed to establish SSLv3 connection.'
 	exit 0
 else
